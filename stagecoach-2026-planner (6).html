@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Stagecoach '26" />
+<meta name="theme-color" content="#1a0a00" />
+<title>Stagecoach 2026 — Squad Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0f0800;
+    --surface: #1c1005;
+    --surface2: #261508;
+    --border: rgba(255,180,60,0.15);
+    --border-strong: rgba(255,180,60,0.35);
+    --gold: #e8a020;
+    --gold-light: #f5c060;
+    --text: #f5ead8;
+    --text-muted: #a0876a;
+    --text-dim: #6b5540;
+    --must: #4caf6e;
+    --must-bg: rgba(76,175,110,0.15);
+    --maybe: #e8c020;
+    --maybe-bg: rgba(232,192,32,0.15);
+    --skip: #e05050;
+    --skip-bg: rgba(224,80,80,0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100%; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .hidden { display: none !important; }
+
+  /* Fullscreen center screens */
+  .center-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.5rem; text-align: center; }
+  .center-screen h1 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 900; color: var(--gold-light); margin-bottom: 8px; }
+  .center-screen h2 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--gold-light); margin-bottom: 6px; }
+  .center-screen .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.7; max-width: 400px; }
+  .card { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 1.5rem; width: 100%; max-width: 420px; text-align: left; margin-bottom: 1rem; }
+  .card label { display: block; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; margin-top: 14px; }
+  .card label:first-child { margin-top: 0; }
+  .card input, .card textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm); color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 10px 12px; outline: none;
+  }
+  .card textarea { font-family: monospace; font-size: 12px; height: 150px; resize: vertical; }
+  .card input:focus, .card textarea:focus { border-color: var(--gold); }
+  .card input::placeholder, .card textarea::placeholder { color: var(--text-dim); }
+  .hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; line-height: 1.6; }
+  .big-btn { width: 100%; margin-top: 14px; background: var(--gold); border: none; border-radius: var(--radius-sm); color: #1a0a00; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; padding: 12px; cursor: pointer; }
+  .big-btn:active { opacity: 0.8; }
+  .err-msg { font-size: 13px; color: #e06060; margin-top: 8px; min-height: 18px; }
+
+  /* Steps */
+  .step { margin-bottom: 1.1rem; }
+  .step-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; display: flex; align-items: center; gap: 7px; }
+  .step-num { width: 20px; height: 20px; background: var(--gold); color: #1a0a00; border-radius: 50%; font-size: 10px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-body { font-size: 12px; color: var(--text-muted); margin-left: 27px; line-height: 1.7; }
+  .step-body a { color: var(--gold); text-decoration: none; }
+  .step-body code { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 11px; color: var(--gold-light); }
+
+  /* App header */
+  .app-header { background: linear-gradient(180deg, #261005 0%, #1a0a00 100%); border-bottom: 1px solid var(--border-strong); padding: calc(var(--safe-top) + 16px) 20px 16px; text-align: center; position: sticky; top: 0; z-index: 100; }
+  .app-header h1 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 900; color: var(--gold-light); }
+  .app-header p { font-size: 11px; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  /* User bar */
+  .user-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 16px; }
+  .user-row { display: flex; gap: 8px; align-items: center; }
+  .user-display { font-size: 13px; color: var(--text-muted); flex: 1; }
+  .user-display strong { color: var(--gold-light); }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--maybe); flex-shrink: 0; }
+  .sync-dot.off { background: #e06060; }
+  .switch-btn { font-size: 12px; padding: 4px 10px; border: 1px solid var(--border-strong); border-radius: 20px; background: transparent; color: var(--text-muted); cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+  .chips-row { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .chip { font-size: 11px; padding: 2px 9px; border-radius: 20px; border: 1px solid var(--border-strong); color: var(--text-muted); background: transparent; }
+  .chip.me { background: var(--must-bg); border-color: var(--gold); color: var(--gold-light); }
+  .flash-msg { font-size: 11px; color: var(--maybe); margin-top: 5px; min-height: 14px; }
+
+  /* Day tabs */
+  .day-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; position: sticky; top: calc(var(--safe-top) + 56px); z-index: 90; }
+  .day-tabs::-webkit-scrollbar { display: none; }
+  .day-tab { flex: 1; min-width: 78px; padding: 10px 4px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; cursor: pointer; text-align: center; white-space: nowrap; }
+  .day-tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+  .day-tab-label { display: block; font-size: 10px; opacity: 0.7; margin-top: 1px; }
+
+  /* Schedule */
+  .tab-panel { display: none; padding-bottom: calc(var(--safe-bottom) + 80px); }
+  .tab-panel.active { display: block; }
+  .stage-name { font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); padding: 10px 16px 6px; border-top: 1px solid var(--border); margin-top: 8px; }
+  .act-time { font-size: 11px; color: var(--text-dim); min-width: 86px; flex-shrink: 0; }
+  .act-name { flex: 1; min-width: 0; }
+  .act-name a { color: var(--gold-light); text-decoration: none; font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .act-name a:active { opacity: 0.7; }
+  .act-dots { display: flex; gap: 3px; margin-top: 3px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); flex-shrink: 0; }
+  .dot.must { background: var(--must); }
+  .dot.maybe { background: var(--maybe); }
+  .dot.skip { background: var(--skip); }
+  .vote-group { display: flex; gap: 5px; flex-shrink: 0; }
+  .vbtn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-strong); background: transparent; color: var(--text-muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'DM Sans', sans-serif; }
+  .vbtn:active { transform: scale(0.9); }
+  .vbtn.must { background: var(--must-bg); border-color: var(--must); color: var(--gold); }
+  .vbtn.maybe { background: var(--maybe-bg); border-color: var(--maybe); color: var(--maybe); }
+  .vbtn.skip { background: var(--skip-bg); border-color: var(--skip); color: var(--skip); }
+
+  .empty-msg { text-align: center; padding: 3rem 2rem; color: var(--text-dim); font-size: 14px; line-height: 1.8; }
+
+  /* Day filter bar */
+  .day-filter-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 16px; position: sticky; top: calc(var(--safe-top) + 96px); z-index: 80; }
+  .filter-section { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .filter-section + .filter-section { margin-top: 7px; }
+  .filter-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; min-width: 36px; }
+  .fpill { font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-muted); cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+  .fpill:active { opacity: 0.7; }
+  .fpill.on-must { background: var(--must-bg); border-color: var(--must); color: var(--must); font-weight: 500; }
+  .fpill.on-maybe { background: var(--maybe-bg); border-color: var(--maybe); color: var(--maybe); font-weight: 500; }
+  .fpill.on-skip { background: var(--skip-bg); border-color: var(--skip); color: var(--skip); font-weight: 500; }
+  .fpill.on-none { background: rgba(255,255,255,0.1); border: 2px dashed var(--text-muted); color: var(--text); font-weight: 500; padding: 3px 9px; }
+  .act-row.filtered-out { display: none; }
+
+  /* Sort toggle */
+  .sort-row { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+  .sort-toggle { display: flex; border: 1px solid var(--border-strong); border-radius: 20px; overflow: hidden; }
+  .sort-opt { font-size: 11px; padding: 3px 10px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .sort-opt.active { background: var(--surface2); color: var(--text); }
+
+  /* Expandable act votes */
+  .act-row { display: flex; flex-direction: column; padding: 0; border-bottom: 1px solid rgba(255,180,60,0.07); }
+  .act-main { display: flex; align-items: center; gap: 10px; padding: 10px 16px; cursor: pointer; }
+  .act-main:active { background: rgba(255,255,255,0.03); }
+  .act-expand { display: none; padding: 0 16px 10px 50px; }
+  .act-expand.open { display: flex; gap: 5px; flex-wrap: wrap; }
+  .vote-face { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+  .vote-face.must { background: var(--must-bg); color: var(--must); }
+  .vote-face.maybe { background: var(--maybe-bg); color: var(--maybe); }
+  .vote-face.skip { background: var(--skip-bg); color: var(--skip); }
+  .vote-face.none { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+  .expand-caret { font-size: 10px; color: var(--text-dim); flex-shrink: 0; transition: transform 0.15s; margin-left: 2px; }
+  .expand-caret.open { transform: rotate(180deg); }
+  .stage-tag { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1: Firebase config -->
+<div id="configScreen" class="center-screen hidden">
+  <h2>🤠 One-time setup</h2>
+  <p class="sub">Connect a free Firebase database so your whole group's votes sync in real time. Only one person needs to do this — then share the HTML file with the config already saved.</p>
+  <div class="card">
+    <div class="step">
+      <div class="step-title"><span class="step-num">1</span> Create a Firebase project</div>
+      <div class="step-body">Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong>Add project</strong> → name it anything → finish the wizard.</div>
+    </div>
+    <div class="step">
+      <div class="step-title"><span class="step-num">2</span> Enable Realtime Database</div>
+      <div class="step-body">Left sidebar → <strong>Build → Realtime Database → Create database</strong> → pick any location → choose <strong>Start in test mode</strong> → Enable.</div>
+    </div>
+    <div class="step">
+      <div class="step-title"><span class="step-num">3</span> Get your config</div>
+      <div class="step-body">Gear icon → <strong>Project settings</strong> → scroll to "Your apps" → click <code>&lt;/&gt;</code> → register app → copy the <code>firebaseConfig</code> object.</div>
+    </div>
+    <label>Paste firebaseConfig here</label>
+    <textarea id="configInput" placeholder='{
+  "apiKey": "AIza...",
+  "authDomain": "yourapp.firebaseapp.com",
+  "databaseURL": "https://yourapp-default-rtdb.firebaseio.com",
+  "projectId": "yourapp",
+  "storageBucket": "yourapp.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123:web:abc"
+}'></textarea>
+    <div class="err-msg" id="configErr"></div>
+    <button class="big-btn" onclick="saveConfig()">Connect &amp; continue</button>
+  </div>
+</div>
+
+<!-- SCREEN 2: Enter name -->
+<div id="nameScreen" class="center-screen hidden">
+  <h1>🤠 Stagecoach 2026</h1>
+  <p class="sub">Squad Planner · Enter your name to join your group</p>
+  <div class="card">
+    <label>Your name</label>
+    <input type="text" id="nameInput" placeholder="e.g. Alex" maxlength="24" autocomplete="off" autocorrect="off" />
+    <p class="hint">Your votes will sync with everyone else in real time.</p>
+    <button class="big-btn" onclick="joinGroup()">Let's go 🤠</button>
+    <div class="err-msg" id="nameErr"></div>
+  </div>
+</div>
+
+<!-- SCREEN 3: Main app -->
+<div id="mainApp" class="hidden">
+  <div class="app-header">
+    <h1>🤠 Stagecoach 2026</h1>
+    <p>Squad Planner · Apr 24–26 · Indio, CA</p>
+  </div>
+  <div class="user-bar">
+    <div class="user-row">
+      <span class="user-display">Voting as <strong id="userLabel"></strong></span>
+      <span class="sync-dot" id="syncDot"></span>
+      <button class="switch-btn" onclick="switchUser()">Switch user</button>
+    </div>
+    <div class="chips-row" id="chipsRow"></div>
+    <div class="flash-msg" id="flashMsg"></div>
+  </div>
+  <div class="day-tabs">
+    <button class="day-tab active" onclick="showDay('fri',this)">Fri Apr 24</button>
+    <button class="day-tab" onclick="showDay('sat',this)">Sat Apr 25</button>
+    <button class="day-tab" onclick="showDay('sun',this)">Sun Apr 26</button>
+  </div>
+  <div id="panel-fri" class="tab-panel active"></div>
+  <div id="panel-sat" class="tab-panel"></div>
+  <div id="panel-sun" class="tab-panel"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+const SCHEDULE = {
+  fri: { label:"Friday, April 24", stages:[
+    { name:"T-Mobile Mane Stage", acts:[
+      {t:"1:25–1:45pm",a:"Neon Union"},{t:"2:10–2:35pm",a:"Adrien Nunez"},{t:"3:05–3:30pm",a:"Avery Anna"},
+      {t:"4:00–4:45pm",a:"Chase Rice"},{t:"5:15–6:00pm",a:"Nate Smith"},{t:"6:30–7:20pm",a:"Ella Langley"},
+      {t:"7:50–8:50pm",a:"Bailey Zimmerman"},{t:"9:30–11:00pm",a:"Cody Johnson"}]},
+    { name:"Palomino Stage", acts:[
+      {t:"1:05–1:25pm",a:"Noah Rinker"},{t:"1:50–2:15pm",a:"Ole 60"},{t:"2:40–3:05pm",a:"Larkin Poe"},
+      {t:"3:35–4:15pm",a:"Marcus King Band"},{t:"4:45–5:30pm",a:"Lyle Lovett"},{t:"6:00–6:50pm",a:"Wynonna Judd"},
+      {t:"7:20–8:20pm",a:"Sam Barber"},{t:"8:50–9:30pm",a:"Dan + Shay (rumored)"}]},
+    { name:"Mustang Stage", acts:[
+      {t:"5:20–6:05pm",a:"BigXthaPlug"},{t:"6:45–7:35pm",a:"Counting Crows"},
+      {t:"8:30–9:30pm",a:"Red Clay Strays"},{t:"11:00pm–12am",a:"Diplo (Late Night)"}]},
+    { name:"Toyota Music Den", acts:[
+      {t:"2:40–3:05pm",a:"Hannah McFarland"},{t:"3:35–4:00pm",a:"Tayler Holder"},
+      {t:"4:50–5:15pm",a:"Julia Cole"},{t:"6:00–6:30pm",a:"Noah Cyrus"}]},
+    { name:"Diplo's HonkyTonk", acts:[
+      {t:"1:00–3:00pm",a:"Shaddix"},{t:"3:00–5:00pm",a:"Kevin Bolt"},{t:"5:00–6:00pm",a:"Emo Nite ft. Ashlee Simpson"},
+      {t:"6:00–7:00pm",a:"Scooter"},{t:"7:00–8:00pm",a:"Wuki"},{t:"8:00–9:00pm",a:"Rebecca Black"},
+      {t:"9:00–9:30pm",a:"Diplo ft. Juicy J"},{t:"9:30–10:30pm",a:"Dillstradamus"},{t:"10:30pm–12am",a:"Slim McGraw"}]},
+    { name:"Bud Light Stage", acts:[
+      {t:"2:35–3:05pm",a:"Julia Cole"},{t:"4:45–5:15pm",a:"Adrien Nunez"},{t:"6:00–6:30pm",a:"Josh Ross"}]}
+  ]},
+  sat: { label:"Saturday, April 25", stages:[
+    { name:"T-Mobile Mane Stage", acts:[
+      {t:"1:25–1:45pm",a:"Kevin Smiley"},{t:"2:10–2:35pm",a:"Lane Pittman"},{t:"3:05–3:30pm",a:"Redferrin"},
+      {t:"4:00–4:45pm",a:"Corey Kent"},{t:"5:15–6:00pm",a:"Teddy Swims"},{t:"6:30–7:20pm",a:"Little Big Town"},
+      {t:"7:50–8:50pm",a:"Riley Green"},{t:"9:30–11:00pm",a:"Lainey Wilson"}]},
+    { name:"Palomino Stage", acts:[
+      {t:"1:05–1:25pm",a:"S.G. Goodman"},{t:"1:50–2:15pm",a:"Braxton Keith"},{t:"2:40–3:05pm",a:"Benjamin Tod"},
+      {t:"3:35–4:15pm",a:"Michael Marcagi"},{t:"4:45–5:30pm",a:"Billy Bob Thornton & The Boxmasters"},
+      {t:"6:00–6:50pm",a:"Charles Wesley Godwin"},{t:"7:20–8:20pm",a:"Gavin Adcock"},
+      {t:"8:50–9:30pm",a:"Whiskey Jam All-Star Sing-Along"}]},
+    { name:"Mustang Stage", acts:[
+      {t:"5:20–6:05pm",a:"Treaty Oak Revival"},{t:"6:45–7:35pm",a:"Bush"},
+      {t:"8:30–9:30pm",a:"Journey"},{t:"11:00–11:55pm",a:"Pitbull (Late Night)"}]},
+    { name:"Toyota Music Den", acts:[
+      {t:"2:40–3:05pm",a:"Something Out West"},{t:"3:35–4:00pm",a:"Elizabeth Nichols"},
+      {t:"4:50–5:15pm",a:"Willow Avalon"},{t:"6:00–6:30pm",a:"Chase Matthew"}]},
+    { name:"Diplo's HonkyTonk", acts:[
+      {t:"1:00–3:00pm",a:"Jeffro"},{t:"3:00–5:00pm",a:"Kermie J Rock"},{t:"5:00–6:30pm",a:"Disko Cowboy"},
+      {t:"6:30–7:30pm",a:"Diplo ft. Theo Von"},{t:"7:30–8:30pm",a:"Marshmello"},
+      {t:"8:30–9:30pm",a:"Two Friends"},{t:"9:30–10:30pm",a:"Y.O.G.A."},{t:"10:30pm–12am",a:"Rick (Late Night)"}]},
+    { name:"Bud Light Stage", acts:[
+      {t:"2:35–3:05pm",a:"Noah Rinker"},{t:"4:45–5:15pm",a:"Braxton Keith"},{t:"6:00–6:30pm",a:"Tyler Braden"}]}
+  ]},
+  sun: { label:"Sunday, April 26", stages:[
+    { name:"T-Mobile Mane Stage", acts:[
+      {t:"1:25–1:45pm",a:"Adam Sanders"},{t:"2:10–2:35pm",a:"Ink"},{t:"3:05–3:30pm",a:"Hudson Westbrook"},
+      {t:"4:00–4:45pm",a:"Kameron Marlowe"},{t:"5:15–6:00pm",a:"Brett Young"},{t:"6:30–7:20pm",a:"Warren Zeiders"},
+      {t:"7:50–8:50pm",a:"Brooks & Dunn"},{t:"9:30–11:00pm",a:"Post Malone"}]},
+    { name:"Palomino Stage", acts:[
+      {t:"1:05–1:25pm",a:"Jake Worthington"},{t:"1:50–2:15pm",a:"Bayker Blankenship"},{t:"2:40–3:05pm",a:"Amos Lee"},
+      {t:"3:35–4:15pm",a:"Cameron Whitcomb"},{t:"4:45–5:30pm",a:"Max McNown"},{t:"6:00–6:50pm",a:"Ty Myers"},
+      {t:"7:20–8:20pm",a:"Wyatt Flores"},{t:"8:50–9:30pm",a:"Whiskey Jam All-Star Sing-Along"}]},
+    { name:"Mustang Stage", acts:[
+      {t:"5:20–6:05pm",a:"The Wallflowers"},{t:"6:45–7:35pm",a:"Third Eye Blind"},
+      {t:"8:30–9:30pm",a:"Hootie & The Blowfish"},{t:"11:00–11:55pm",a:"Ludacris (Late Night)"}]},
+    { name:"Toyota Music Den", acts:[
+      {t:"2:40–3:05pm",a:"Brandon Wisham"},{t:"3:35–4:00pm",a:"Zach John King"},
+      {t:"4:50–5:15pm",a:"Gabriella Rose"},{t:"6:00–6:30pm",a:"Eli Young Band"}]},
+    { name:"Diplo's HonkyTonk", acts:[
+      {t:"1:00–3:00pm",a:"Lauren"},{t:"3:00–5:00pm",a:"30Rack"},{t:"5:00–6:00pm",a:"Flying Mojito Bros"},
+      {t:"6:00–7:00pm",a:"ADHD"},{t:"7:00–8:00pm",a:"Loud Luxury"},{t:"8:00–9:00pm",a:"DJ Pauly D"},
+      {t:"9:00–10:00pm",a:"Country Nights"},{t:"10:00pm–12am",a:"Bad Ash (Late Night)"}]},
+    { name:"Bud Light Stage", acts:[
+      {t:"2:35–3:05pm",a:"Gabriella Rose"},{t:"4:45–5:15pm",a:"Jake Worthington"},{t:"6:00–6:30pm",a:"Ryan Hurd"}]}
+  ]}
+};
+
+const CFG_KEY = 'sc26_fbcfg';
+const NAME_KEY = 'sc26_name';
+
+let db = null, dbRef = null;
+let currentUser = null;
+let allVotes = {}, allUsers = [];
+
+function show(id) {
+  ['configScreen','nameScreen','mainApp'].forEach(s =>
+    document.getElementById(s).classList.toggle('hidden', s !== id));
+}
+
+function saveConfig() {
+  const raw = document.getElementById('configInput').value.trim();
+  const err = document.getElementById('configErr');
+  err.textContent = '';
+  let cfg;
+  try {
+    let json = raw.includes('{') ? raw.slice(raw.indexOf('{'), raw.lastIndexOf('}')+1) : raw;
+    // Quote unquoted keys (handles Firebase script tag format)
+    json = json.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)/g, '$1"$2"$3');
+    cfg = JSON.parse(json);
+  } catch(e) { err.textContent = 'Could not parse — paste the full { ... } object.'; return; }
+  if (!cfg.databaseURL) { err.textContent = 'Missing databaseURL. Did you enable Realtime Database?'; return; }
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+  initFirebase(cfg);
+}
+
+function initFirebase(cfg) {
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(cfg);
+    db = firebase.database();
+    dbRef = db.ref('sc2026');
+    dbRef.on('value', snap => {
+      const d = snap.val() || {};
+      allVotes = d.votes || {};
+      allUsers = d.users || [];
+      setSyncDot(true);
+      if (document.getElementById('mainApp').classList.contains('hidden') === false) renderAll();
+    }, () => setSyncDot(false));
+    const saved = localStorage.getItem(NAME_KEY);
+    if (saved) { currentUser = saved; show('mainApp'); renderAll(); }
+    else show('nameScreen');
+  } catch(e) {
+    document.getElementById('configErr').textContent = 'Firebase error: ' + e.message;
+  }
+}
+
+function setSyncDot(on) {
+  const d = document.getElementById('syncDot');
+  if (d) d.className = 'sync-dot' + (on ? '' : ' off');
+}
+
+function joinGroup() {
+  const n = document.getElementById('nameInput').value.trim();
+  if (!n) { document.getElementById('nameErr').textContent = 'Please enter your name.'; return; }
+  currentUser = n;
+  localStorage.setItem(NAME_KEY, n);
+  if (!allUsers.includes(n)) { allUsers.push(n); dbRef.child('users').set(allUsers); }
+  show('mainApp');
+  renderAll();
+}
+
+function switchUser() {
+  localStorage.removeItem(NAME_KEY);
+  currentUser = null;
+  document.getElementById('nameInput').value = '';
+  show('nameScreen');
+}
+
+function spotifyUrl(a) { return 'https://open.spotify.com/search/' + encodeURIComponent(a); }
+function actKey(day, stage, artist) { return (day + '_' + stage + '_' + artist).replace(/[.#$[\]/\s]/g, '_'); }
+function getVote(user, key) { return allVotes[user] && allVotes[user][key] || null; }
+
+function setVote(key, v) {
+  if (!currentUser) return;
+  const cur = getVote(currentUser, key);
+  const nv = cur === v ? null : v;
+  if (!allVotes[currentUser]) allVotes[currentUser] = {};
+  if (nv === null) { delete allVotes[currentUser][key]; dbRef.child('votes/'+currentUser+'/'+key).remove(); }
+  else { allVotes[currentUser][key] = nv; dbRef.child('votes/'+currentUser+'/'+key).set(nv); }
+  flash(nv ? {must:'★ Definitely!', maybe:'? Maybe', skip:'✕ No'}[nv] : 'Cleared');
+  const day = key.split('_')[0];
+  renderDay(day);
+}
+
+function flash(msg) {
+  const el = document.getElementById('flashMsg');
+  if (!el) return;
+  el.textContent = msg;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.textContent=''; }, 2000);
+}
+
+function renderChips() {
+  const row = document.getElementById('chipsRow');
+  if (!row) return;
+  row.innerHTML = allUsers.map(u =>
+    `<span class="chip${u===currentUser?' me':''}">${u===currentUser?'● ':''}<b>${u}</b></span>`
+  ).join('');
+}
+
+// dayFilters: { mine: Set, group: Set } — 'all' means no filter active
+const dayFilters = {
+  mine: new Set(),
+  group: new Set()
+};
+let sortMode = 'stage'; // 'stage' or 'time'
+
+function toggleDayFilter(scope, val) {
+  const s = dayFilters[scope];
+  if (s.has(val)) s.delete(val); else s.add(val);
+  ['fri','sat','sun'].forEach(renderDay);
+}
+
+function toggleSort(mode) {
+  sortMode = mode;
+  ['fri','sat','sun'].forEach(renderDay);
+}
+
+function toggleActExpand(id) {
+  const el = document.getElementById('expand-' + id);
+  const caret = document.getElementById('caret-' + id);
+  if (!el) return;
+  el.classList.toggle('open');
+  if (caret) caret.classList.toggle('open');
+}
+
+function actPassesFilter(myV, key) {
+  const mf = dayFilters.mine;
+  const gf = dayFilters.group;
+  // If both filters are empty, show everything
+  if (mf.size === 0 && gf.size === 0) return true;
+  // Mine filter: check current user's vote
+  if (mf.size > 0) {
+    const cat = myV || 'none';
+    if (!mf.has(cat)) return false;
+  }
+  // Group filter: pass if ANY user (including self) has a vote in gf
+  if (gf.size > 0) {
+    const anyMatch = allUsers.some(u => gf.has(getVote(u, key) || 'none'));
+    if (!anyMatch) return false;
+  }
+  return true;
+}
+
+function filterBarHTML(day) {
+  const mf = dayFilters.mine;
+  const gf = dayFilters.group;
+  return `<div class="day-filter-bar" id="filterbar-${day}">
+    <div class="filter-section">
+      <span class="filter-label">Mine</span>
+      <button class="fpill${mf.has('must')?' on-must':''}" onclick="toggleDayFilter('mine','must')">★ Definitely</button>
+      <button class="fpill${mf.has('maybe')?' on-maybe':''}" onclick="toggleDayFilter('mine','maybe')">? Maybe</button>
+      <button class="fpill${mf.has('skip')?' on-skip':''}" onclick="toggleDayFilter('mine','skip')">✕ No</button>
+      <button class="fpill${mf.has('none')?' on-none':''}" onclick="toggleDayFilter('mine','none')">— Unrated</button>
+    </div>
+    <div class="filter-section">
+      <span class="filter-label">Group</span>
+      <button class="fpill${gf.has('must')?' on-must':''}" onclick="toggleDayFilter('group','must')">★ Definitely</button>
+      <button class="fpill${gf.has('maybe')?' on-maybe':''}" onclick="toggleDayFilter('group','maybe')">? Maybe</button>
+      <button class="fpill${gf.has('skip')?' on-skip':''}" onclick="toggleDayFilter('group','skip')">✕ No</button>
+      <button class="fpill${gf.has('none')?' on-none':''}" onclick="toggleDayFilter('group','none')">— Unrated</button>
+    </div>
+    <div class="sort-row">
+      <span class="filter-label">Sort</span>
+      <div class="sort-toggle">
+        <button class="sort-opt${sortMode==='stage'?' active':''}" onclick="toggleSort('stage')">By stage</button>
+        <button class="sort-opt${sortMode==='time'?' active':''}" onclick="toggleSort('time')">By time</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function timeToMinutes(t) {
+  // e.g. "9:30–11:00pm" — parse start time
+  const start = t.split('–')[0].trim();
+  const isPm = t.includes('pm') && !t.toLowerCase().startsWith('12');
+  const [h, m] = start.replace(/[apm]/gi,'').split(':').map(Number);
+  return (isPm ? h + 12 : h) * 60 + (m || 0);
+}
+
+function actRowHTML(act, stage, key, myV, visible, idx) {
+  const sk = key.replace(/'/g,"\\'");
+  const dots = allUsers.map(u => {
+    const v = getVote(u, key);
+    return `<span class="dot${v?' '+v:''}" title="${u}: ${v||'—'}"></span>`;
+  }).join('');
+  const faces = allUsers.length ? allUsers.map(u => {
+    const v = getVote(u, key);
+    const label = v==='must'?'★':v==='maybe'?'?':v==='skip'?'✕':'—';
+    const cls = v || 'none';
+    return `<span class="vote-face ${cls}">${label} ${u}</span>`;
+  }).join('') : '<span class="vote-face none">No group members yet</span>';
+
+  const stageTag = sortMode === 'time' ? `<div class="stage-tag">${stage}</div>` : '';
+
+  return `<div class="act-row${visible?'':' filtered-out'}">
+    <div class="act-main" onclick="toggleActExpand(${idx})">
+      <span class="act-time">${act.t}</span>
+      <div class="act-name">
+        <a href="${spotifyUrl(act.a)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${act.a}</a>
+        ${stageTag}
+        ${allUsers.length ? `<div class="act-dots">${dots}</div>` : ''}
+      </div>
+      <div class="vote-group">
+        <button class="vbtn${myV==='must'?' must':''}" onclick="event.stopPropagation();setVote('${sk}','must')" title="Definitely">★</button>
+        <button class="vbtn${myV==='maybe'?' maybe':''}" onclick="event.stopPropagation();setVote('${sk}','maybe')" title="Maybe">?</button>
+        <button class="vbtn${myV==='skip'?' skip':''}" onclick="event.stopPropagation();setVote('${sk}','skip')" title="No">✕</button>
+      </div>
+      <span class="expand-caret" id="caret-${idx}">▾</span>
+    </div>
+    <div class="act-expand" id="expand-${idx}">${faces}</div>
+  </div>`;
+}
+
+function renderDay(day) {
+  const panel = document.getElementById('panel-' + day);
+  if (!panel) return;
+  let html = filterBarHTML(day);
+  let idx = 0;
+
+  if (sortMode === 'stage') {
+    SCHEDULE[day].stages.forEach(stage => {
+      html += `<div class="stage-name">${stage.name}</div>`;
+      stage.acts.forEach(act => {
+        const key = actKey(day, stage.name, act.a);
+        const myV = currentUser ? getVote(currentUser, key) : null;
+        const visible = actPassesFilter(myV, key);
+        html += actRowHTML(act, stage.name, key, myV, visible, idx++);
+      });
+    });
+  } else {
+    // Build flat list sorted by start time
+    const flat = [];
+    SCHEDULE[day].stages.forEach(stage => {
+      stage.acts.forEach(act => {
+        flat.push({ act, stage: stage.name, mins: timeToMinutes(act.t) });
+      });
+    });
+    flat.sort((a, b) => a.mins - b.mins);
+    flat.forEach(({ act, stage }) => {
+      const key = actKey(day, stage, act.a);
+      const myV = currentUser ? getVote(currentUser, key) : null;
+      const visible = actPassesFilter(myV, key);
+      html += actRowHTML(act, stage, key, myV, visible, idx++);
+    });
+  }
+
+  panel.innerHTML = html;
+}
+
+function renderAll() {
+  const ul = document.getElementById('userLabel');
+  if (ul) ul.textContent = currentUser || '';
+  renderChips();
+  ['fri','sat','sun'].forEach(renderDay);
+}
+
+function showDay(day, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+day).classList.add('active');
+  btn.classList.add('active');
+}
+
+document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key==='Enter') joinGroup(); });
+
+// Boot
+const saved = localStorage.getItem(CFG_KEY);
+if (saved) { try { initFirebase(JSON.parse(saved)); } catch(e) { show('configScreen'); } }
+else { show('configScreen'); }
+</script>
+</body>
+</html>
